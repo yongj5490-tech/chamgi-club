@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>참기 클럽</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+body { font-family: -apple-system, sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; padding-bottom: 100px; }
+button { background: #111; color: #fff; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 16px; }
+button:disabled { background: #ccc; }
+input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+.card { background: #fff; border: 1px solid #e5e5e5; border-radius: 16px; padding: 16px; margin-top: 16px; }
+.hero { text-align: center; padding: 40px 0 24px; }
+.hero-badge { display: inline-block; background: #111; color: #fff; font-size: 12px; padding: 6px 12px; border-radius: 20px; }
+.hero h1 { font-size: 32px; line-height: 1.3; margin: 16px 0 12px; }
+.hero-desc { color: #666; font-size: 15px; line-height: 1.6; }
+.google-btn { background: #fff; color: #111; border: 1px solid #ddd; width: 100%; margin-top: 16px; }
+.rule-title { text-align: left; font-size: 18px; font-weight: 800; margin-top: 24px; }
+.rule-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; text-align: left; }
+.rule-card { background: #f7f7f7; border: 1px solid #eee; border-radius: 16px; padding: 16px; }
+.rule-emoji { font-size: 28px; }
+.rule-big { font-size: 17px; font-weight: 800; margin: 8px 0 4px; line-height: 1.3; }
+.rule-small { font-size: 13px; color: #666; line-height: 1.5; }
+.howto { display: flex; gap: 8px; margin-top: 16px; text-align: left; }
+.howto div { flex: 1; background: #f7f7f7; border-radius: 12px; padding: 12px; font-size: 13px; line-height: 1.5; }
+.poll-result { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.poll-row { position: relative; display: flex; justify-content: space-between; background: #f2f2f2; border-radius: 10px; padding: 12px; overflow: hidden; }
+.poll-bar { position: absolute; left: 0; top: 0; bottom: 0; background: #ddd; }
+.poll-row span { position: relative; z-index: 1; font-weight: 600; }
+.poll-meta { color: #888; font-size: 12px; margin: 0; }
+.image-box { border: 1px dashed #ddd; border-radius: 16px; padding: 16px; text-align: center; background: #fafafa; }
+.image-box img { width: 100%; max-height: 220px; object-fit: cover; border-radius: 12px; }
+.post-flex { display: flex; gap: 12px; }
+.post-flex img { width: 80px; height: 80px; object-fit: cover; border-radius: 12px; flex-shrink: 0; background: #f2f2f2; }
+.post-text { flex: 1; min-width: 0; }
+.cat-chip { background: #fff; color: #111; border: 1px solid #ddd; padding: 8px 12px; border-radius: 20px; font-size: 13px; }
+.cat-chip.active { background: #111; color: #fff; border-color: #111; }
+.cat-badge { display: inline-block; background: #f2f2f2; font-size: 11px; padding: 4px 8px; border-radius: 12px; margin-bottom: 6px; }
+.fab { position: fixed; right: 20px; bottom: 20px; width: 56px; height: 56px; border-radius: 50%; font-size: 22px; box-shadow: 0 4px 16px rgba(0,0,0,0.2); z-index: 100; }
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+.modal-card { background: #fff; border-radius: 20px; padding: 20px; max-width: 560px; margin: 20px auto; }
+.reason-box { display: flex; gap: 8px; margin-top: 10px; }
+.reason-want { flex: 1; background: #e8f5e9; border-radius: 10px; padding: 10px; font-size: 13px; line-height: 1.5; }
+.reason-hesitate { flex: 1; background: #f2f2f2; border-radius: 10px; padding: 10px; font-size: 13px; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<div id="authScreen">
+  <div class="hero">
+    <span class="hero-badge">충동구매 참기 클럽</span>
+    <h1>혼자 참지 마요.<br>같이 투표해요.</h1>
+    <p class="hero-desc">사고 싶은 게 생겼을 때, 혼자 고민하지 말고<br>클럽에 올려서 같이 정해요.<br>투표하면 결과가 바로 보여요.</p>
+    <div class="rule-title">📏 참기 클럽 규칙</div>
+    <div class="rule-grid">
+      <div class="rule-card"><div class="rule-emoji">🙈</div><div class="rule-big">결과는 투표 후에!</div><div class="rule-small">투표하기 전에는<br>결과가 안 보여요</div></div>
+      <div class="rule-card"><div class="rule-emoji">🎁</div><div class="rule-big">3표 = 글 1개</div><div class="rule-small">투표 3번 하면<br>글쓰기권 1개가 생겨요</div></div>
+      <div class="rule-card"><div class="rule-emoji">✋</div><div class="rule-big">1글 1표만</div><div class="rule-small">한 글에는<br>한 번만 투표할 수 있어요</div></div>
+      <div class="rule-card"><div class="rule-emoji">✍️</div><div class="rule-big">이유는 필수!</div><div class="rule-small">사고싶은 이유 +<br>망설이는 이유를 다 써야 해요</div></div>
+    </div>
+    <button class="google-btn" onclick="loginWithGoogle()">Google로 본인인증하고 시작하기</button>
+    <p style="color:#999; font-size:12px; margin-top:12px;">본인인증 후에만 투표와 글쓰기를 할 수 있어요.</p>
+    <button onclick="resetApp()" style="background:#fff; color:#999; border:1px solid #eee; font-size:12px; padding:8px 12px; margin-top:8px;">로그인이 안 돼요? 초기화하기</button>
+  </div>
+</div>
+
+<div id="mainScreen" style="display:none;">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h2 style="margin:0;">🐷 참기 클럽</h2>
+    <button onclick="logout()" style="background:#fff; color:#111; border:1px solid #ddd; font-size:13px; padding:8px 12px;">로그아웃</button>
+  </div>
+  <p id="welcomeText" style="color:#666; font-size:14px;"></p>
+  <div class="howto">
+    <div><b>1. 올리기</b><br>사고 싶은 거 올리기</div>
+    <div><b>2. 투표 3번</b><br>투표하면 글쓰기권 1개</div>
+    <div><b>3. 결과 보기</b><br>투표하면 바로 결과 공개</div>
+  </div>
+  <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:16px;">
+    <button class="cat-chip active" onclick="setCategory('전체', this)">전체</button>
+    <button class="cat-chip" onclick="setCategory('의류', this)">👕 의류</button>
+    <button class="cat-chip" onclick="setCategory('잡화', this)">👜 잡화</button>
+    <button class="cat-chip" onclick="setCategory('뷰티', this)">💄 뷰티</button>
+    <button class="cat-chip" onclick="setCategory('전자기기', this)">📱 전자기기</button>
+    <button class="cat-chip" onclick="setCategory('식품·간식', this)">🍫 식품·간식</button>
+    <button class="cat-chip" onclick="setCategory('취미·문구', this)">✏️ 취미·문구</button>
+    <button class="cat-chip" onclick="setCategory('생활용품', this)">🏠 생활용품</button>
+    <button class="cat-chip" onclick="setCategory('기타', this)">기타</button>
+  </div>
+  <p id="status">버튼을 눌러보세요</p>
+  <div id="list"></div>
+  <button class="fab" onclick="openPostModal()">✏️</button>
+</div>
+
+<div id="postModal" class="modal">
+  <div class="modal-card">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h3 style="margin:0;">글쓰기</h3>
+      <button onclick="closePostModal()" style="background:#fff; color:#111; border:1px solid #ddd; padding:6px 12px; font-size:14px;">✕ 닫기</button>
+    </div>
+    <div class="image-box" style="margin-top:16px;">
+      <div id="imagePlaceholder">🖼️ 상품 사진을 첨부해줘요<br><span style="font-size:13px; color:#888;">파일 선택으로 직접 사진을 고르면 돼요 (필수)</span></div>
+      <img id="imagePreview" style="display:none;" alt="미리보기">
+    </div>
+    <label style="display:block; background:#111; color:#fff; text-align:center; padding:12px; border-radius:8px; margin-top:10px; cursor:pointer;">
+      📷 파일 선택해서 미리보기 보기
+      <input type="file" id="product_image" accept="image/*" style="display:none;" onchange="handleFileSelect(event)">
+    </label>
+    <p id="imageStatus" style="font-size:12px; color:#888;"></p>
+    <select id="category" style="margin-top:8px;">
+      <option value="의류">👕 의류</option>
+      <option value="잡화">👜 잡화</option>
+      <option value="뷰티">💄 뷰티</option>
+      <option value="전자기기">📱 전자기기</option>
+      <option value="식품·간식">🍫 식품·간식</option>
+      <option value="취미·문구">✏️ 취미·문구</option>
+      <option value="생활용품">🏠 생활용품</option>
+      <option value="기타">기타</option>
+    </select><br><br>
+    <input id="product_name" placeholder="상품 이름"><br><br>
+    <input id="price" type="number" placeholder="가격"><br><br>
+    <input id="reason_want" placeholder="사고싶은 이유 (필수)"><br><br>
+    <input id="reason_hesitate" placeholder="망설이는 이유 (필수)"><br><br>
+    <input id="plan_if_skip" placeholder="안 사면 그 돈으로 뭐 할지 (선택)"><br><br>
+    <div style="background:#f2f2f2; border-radius:10px; height:12px; overflow:hidden; margin-top:12px;">
+      <div id="voteGauge" style="background:#111; height:100%; width:0%; transition:width 0.3s;"></div>
+    </div>
+    <p id="myVoteInfo">내 투표: 0개</p>
+    <p id="postRightInfo" style="font-size:13px; color:#666;">첫 글은 무료예요!</p>
+    <button id="postBtn" onclick="createPost()" style="width:100%;">글 올리기</button>
+  </div>
+</div>
+
+<script>
+var SUPABASE_URL = "https://hjpqipzjvnkocpecgvbc.supabase.co";
+var SUPABASE_KEY = "sb_publishable_Gtal65jwuCXkLzgTwrBmEA_ztStKl7b";
+var ADMIN_EMAIL = "yongj5490@gmail.com";
+var currentUserEmail = "";
+var supabaseClient = null;
+try { supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch (e) {}
+var isPosting = false;
+var selectedImageUrl = "";
+var selectedCategory = "전체";
+function showScreen(isLoggedIn, email) {
+  currentUserEmail = email || "";
+  var a = document.getElementById('authScreen');
+  var m = document.getElementById('mainScreen');
+  if (a) a.style.display = isLoggedIn ? 'none' : 'block';
+  if (m) m.style.display = isLoggedIn ? 'block' : 'none';
+  if (isLoggedIn) {
+    var w = document.getElementById('welcomeText');
+    if (w) w.innerText = email ? email + "님, 환영해요!" : "환영해요!";
+    loadPosts();
+  }
+}
+async function checkLogin() {
+  if (!supabaseClient) { showScreen(false, ""); return; }
+  try {
+    var result = await supabaseClient.auth.getSession();
+    var session = result.data ? result.data.session : null;
+    if (session && session.user) showScreen(true, session.user.email);
+    else showScreen(false, "");
+  } catch (e) { showScreen(false, ""); }
+}
+async function loginWithGoogle() {
+  if (!supabaseClient) { alert("아직 연결 중이에요. 새로고침하고 다시 눌러봐요."); return; }
+  try {
+    var result = await supabaseClient.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + window.location.pathname } });
+    if (result.error) alert("로그인 오류: " + result.error.message);
+  } catch (e) { alert("로그인 오류: " + e.message); }
+}
+async function logout() {
+  var modal = document.getElementById('postModal');
+  if (modal) modal.style.display = "none";
+  try { if (supabaseClient) await supabaseClient.auth.signOut(); } catch (e) {}
+  showScreen(false, "");
+}
+async function resetApp() {
+  try { if (supabaseClient) await supabaseClient.auth.signOut(); } catch (e) {}
+  localStorage.clear();
+  location.reload();
+}
+function getVoteCount() {
+  var count = 0;
+  for (var i = 0; i < localStorage.length; i++) {
+    var key = localStorage.key(i);
+    if (key && key.indexOf('voted_') === 0) count++;
+  }
+  return count;
+}
+function getPostCount() { return Number(localStorage.getItem('chamgi_post_count') || 0); }
+function updateMyVoteInfo() {
+  var votes = getVoteCount();
+  var posts = getPostCount();
+  var info = document.getElementById('myVoteInfo');
+  var rightInfo = document.getElementById('postRightInfo');
+  var gauge = document.getElementById('voteGauge');
+  var btn = document.getElementById('postBtn');
+  var needForNext = posts >= 1 ? posts * 3 : 0;
+  if (posts === 0) {
+    if (info) info.innerText = "내 투표: " + votes + "개 / 첫 글은 무료!";
+    if (rightInfo) rightInfo.innerText = "첫 글은 무료예요! 바로 올리면 돼요.";
+    if (gauge) gauge.style.width = "100%";
+    if (btn) { btn.disabled = false; btn.innerText = "글 올리기"; }
+  } else {
+    if (votes >= needForNext) {
+      if (info) info.innerText = "내 투표: " + votes + "개 / 글쓰기권 있어요!";
+      if (rightInfo) rightInfo.innerText = "글쓰기권이 있어요! 글을 올릴 수 있어요.";
+      if (gauge) gauge.style.width = "100%";
+      if (btn) { btn.disabled = false; btn.innerText = "글 올리기"; }
+    } else {
+      var left = needForNext - votes;
+      if (info) info.innerText = "내 투표: " + votes + "개 / 다음 글까지 " + left + "표 남았어요";
+      if (rightInfo) rightInfo.innerText = "투표 " + left + "번 더 하면 다음 글을 쓸 수 있어요.";
+      if (gauge) gauge.style.width = Math.round(votes / needForNext * 100) + "%";
+      if (btn) { btn.disabled = true; btn.innerText = "투표 " + left + "번 더 필요해요"; }
+    }
+  }
+}
+function openPostModal() { updateMyVoteInfo(); var m = document.getElementById('postModal'); if (m) m.style.display = "block"; }
+function closePostModal() { var m = document.getElementById('postModal'); if (m) m.style.display = "none"; }
+function setCategory(cat, btn) {
+  selectedCategory = cat;
+  var chips = document.querySelectorAll('.cat-chip');
+  for (var i = 0; i < chips.length; i++) chips[i].classList.remove('active');
+  if (btn) btn.classList.add('active');
+  loadPosts();
+}
+function handleFileSelect(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    selectedImageUrl = e.target.result;
+    var img = document.getElementById('imagePreview');
+    var placeholder = document.getElementById('imagePlaceholder');
+    if (img) { img.src = selectedImageUrl; img.style.display = "block"; }
+    if (placeholder) placeholder.style.display = "none";
+    var st = document.getElementById('imageStatus');
+    if (st) st.innerText = "미리보기가 떴어요! 이 사진이 맞아요?";
+  };
+  reader.readAsDataURL(file);
+}
+async function deletePost(post_id) {
+  if (currentUserEmail !== ADMIN_EMAIL) { alert("관리자만 삭제할 수 있어요."); return; }
+  if (!confirm("이 글을 정말 삭제할까요?")) return;
+  try {
+    await fetch(SUPABASE_URL + "/rest/v1/votes?post_id=eq." + post_id, { method: "DELETE", headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY } });
+    await fetch(SUPABASE_URL + "/rest/v1/posts?id=eq." + post_id, { method: "DELETE", headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY } });
+    alert("삭제했어요!"); loadPosts();
+  } catch (e) { alert("삭제 실패: " + e.message); }
+}
+async function loadPosts() {
+  var statusEl = document.getElementById('status');
+  if (statusEl) statusEl.innerText = "불러오는 중...";
+  try {
+    var res = await fetch(SUPABASE_URL + "/rest/v1/posts?select=*&order=created_at.desc", { headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY } });
+    var data = await res.json();
+    if (!Array.isArray(data)) data = [];
+    var votesRes = await fetch(SUPABASE_URL + "/rest/v1/votes?select=post_id,choice,voter_email", { headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY } });
+    var votes = await votesRes.json();
+    if (!Array.isArray(votes)) votes = [];
+    var filtered = data;
+    if (selectedCategory !== "전체") { filtered = data.filter(function(p) { return p.category === selectedCategory; }); }
+    if (statusEl) statusEl.innerText = "성공! 글 " + filtered.length + "개";
+    var html = "";
+    var isAdmin = currentUserEmail === ADMIN_EMAIL;
+    for (var i = 0; i < filtered.length; i++) {
+      var p = filtered[i];
+      var buyCount = 0; var holdCount = 0;
+      for (var j = 0; j < votes.length; j++) {
+        if (votes[j].post_id === p.id && votes[j].choice === 'buy') buyCount++;
+        if (votes[j].post_id === p.id && votes[j].choice === 'hold') holdCount++;
+      }
+      var voted = localStorage.getItem('voted_' + p.id);
+      for (var j = 0; j < votes.length; j++) {
+        if (votes[j].post_id === p.id && votes[j].voter_email === currentUserEmail) { voted = votes[j].choice; break; }
+      }
+      var total = buyCount + holdCount;
+      var buyPct = total === 0 ? 0 : Math.round(buyCount / total * 100);
+      var holdPct = total === 0 ? 0 : Math.round(holdCount / total * 100);
+      var pollHtml = "";
+      if (voted) {
+        pollHtml = '<div class="poll-result">'
+          + '<div class="poll-row"><div class="poll-bar" style="width:' + buyPct + '%"></div><span>' + (voted === 'buy' ? '✓ ' : '') + '사!</span><span>' + buyPct + '% (' + buyCount + ')</span></div>'
+          + '<div class="poll-row"><div class="poll-bar" style="width:' + holdPct + '%"></div><span>' + (voted === 'hold' ? '✓ ' : '') + '참아!</span><span>' + holdPct + '% (' + holdCount + ')</span></div>'
+          + '<p class="poll-meta">' + total + ' participants</p></div>';
+      } else {
+        pollHtml = '<button onclick="vote(\'' + p.id + '\', \'buy\')">사! 🛒</button> '
+          + '<button onclick="vote(\'' + p.id + '\', \'hold\')">참아! 🐷</button>'
+          + '<p>투표하면 결과가 보여요!</p>';
+      }
+      var imgTag = p.image_url ? '<img src="' + p.image_url + '" alt="상품사진">' : '<div style="width:80px; height:80px; background:#f2f2f2; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0;">🖼️</div>';
+      var catTag = p.category ? '<span class="cat-badge">' + p.category + '</span><br>' : '';
+      var reasonHtml = '<div class="reason-box">'
+        + '<div class="reason-want"><b>💚 사고싶어</b><br>' + p.reason_want + '</div>'
+        + '<div class="reason-hesitate"><b>🛑 망설여</b><br>' + p.reason_hesitate + '</div>'
+        + '</div>';
+      var deleteBtn = "";
+      if (isAdmin) { deleteBtn = '<button onclick="deletePost(\'' + p.id + '\')" style="background:#fff; color:#e00; border:1px solid #fcc; font-size:12px; padding:6px 10px; margin-top:10px;">🗑️ 관리자 삭제</button>'; }
+      html += '<div class="card"><div class="post-flex">' + imgTag + '<div class="post-text">' + catTag + '<b>' + p.product_name + '</b> - ' + p.price + '원</div></div>' + reasonHtml + '<br>' + pollHtml + deleteBtn + '</div>';
+    }
+    var listEl = document.getElementById('list');
+    if (listEl) listEl.innerHTML = html;
+    updateMyVoteInfo();
+  } catch (e) { if (statusEl) statusEl.innerText = "실패: " + e.message; }
+}
+async function createPost() {
+  if (isPosting) return;
+  var votes = getVoteCount();
+  var posts = getPostCount();
+  if (posts >= 1 && votes < posts * 3) { alert("투표 " + (posts * 3 - votes) + "번 더 해야 글을 쓸 수 있어요!"); return; }
+  var product_name = document.getElementById('product_name').value;
+  var price = document.getElementById('price').value;
+  var reason_want = document.getElementById('reason_want').value;
+  var reason_hesitate = document.getElementById('reason_hesitate').value;
+  var plan_if_skip = document.getElementById('plan_if_skip').value;
+  var category = document.getElementById('category').value;
+  if (!selectedImageUrl) { alert("사진을 첨부해줘요! 파일 선택으로 직접 사진을 골라줘요."); return; }
+  if (!product_name || !price || !reason_want || !reason_hesitate) { alert("상품 이름, 가격, 사고싶은 이유, 망설이는 이유를 다 써줘요!"); return; }
+  isPosting = true;
+  var btn = document.getElementById('postBtn');
+  if (btn) { btn.disabled = true; btn.innerText = "올리는 중..."; }
+  try {
+    var res = await fetch(SUPABASE_URL + "/rest/v1/posts", { method: "POST", headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY, "Content-Type": "application/json", "Prefer": "return=representation" }, body: JSON.stringify({ product_name: product_name, price: Number(price), reason_want: reason_want, reason_hesitate: reason_hesitate, plan_if_skip: plan_if_skip, status: "voting", image_url: selectedImageUrl, category: category }) });
+    if (res.ok) {
+      localStorage.setItem('chamgi_post_count', String(posts + 1));
+      alert("글 올렸어요!");
+      selectedImageUrl = "";
+      var img = document.getElementById('imagePreview'); if (img) img.style.display = "none";
+      var ph = document.getElementById('imagePlaceholder'); if (ph) ph.style.display = "block";
+      var st = document.getElementById('imageStatus'); if (st) st.innerText = "";
+      var fi = document.getElementById('product_image'); if (fi) fi.value = "";
+      document.getElementById('product_name').value = "";
+      document.getElementById('price').value = "";
+      document.getElementById('reason_want').value = "";
+      document.getElementById('reason_hesitate').value = "";
+      document.getElementById('plan_if_skip').value = "";
+      closePostModal(); loadPosts();
+    } else { alert("글 올리기 실패"); }
+  } catch (e) { alert("글 올리기 실패: " + e.message); }
+  isPosting = false; updateMyVoteInfo();
+}
+async function vote(post_id, choice) {
+  if (!supabaseClient) return;
+  var userResult = await supabaseClient.auth.getUser();
+  var user = userResult.data ? userResult.data.user : null;
+  if (!user || !user.email) { alert("로그인 먼저 해줘요!"); return; }
+  var checkRes = await fetch(SUPABASE_URL + "/rest/v1/votes?post_id=eq." + post_id + "&voter_email=eq." + encodeURIComponent(user.email), { headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY } });
+  var checked = await checkRes.json();
+  if (checked && checked.length > 0) { alert("이미 투표했어요!"); loadPosts(); return; }
+  var res = await fetch(SUPABASE_URL + "/rest/v1/votes", { method: "POST", headers: { "apikey": SUPABASE_KEY, "Authorization": "Bearer " + SUPABASE_KEY, "Content-Type": "application/json", "Prefer": "return=representation" }, body: JSON.stringify({ post_id: post_id, choice: choice, voter_email: user.email }) });
+  if (res.ok) { localStorage.setItem('voted_' + post_id, choice); alert("투표 완료!"); loadPosts(); }
+  else { alert("투표 실패"); }
+}
+checkLogin();
+</script>
+</body>
+</html>
