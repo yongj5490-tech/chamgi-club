@@ -26,10 +26,15 @@ body { margin:0; font-family:-apple-system, BlinkMacSystemFont, "Apple SD Gothic
 .buy { background:#111; color:#fff; }
 .skip { background:#eee; color:#111; }
 .vote-btn:disabled { opacity:.5; }
-.gauge { height:10px; background:#eee; border-radius:20px; overflow:hidden; margin-top:12px; display:flex; }
+.gauge { height:18px; background:#eee; border-radius:20px; overflow:hidden; margin-top:12px; display:flex; }
 .gauge-buy { background:#111; }
-.gauge-skip { background:#ccc; }
-.result { font-size:13px; color:#555; margin-top:8px; text-align:center; }
+.gauge-skip { background:#d9d9d9; }
+.result { margin-top:10px; }
+.result-big { display:flex; gap:8px; }
+.result-box { flex:1; background:#f7f7f7; border-radius:12px; padding:12px 8px; text-align:center; }
+.result-box b { font-size:24px; display:block; }
+.result-box span { font-size:13px; color:#555; }
+.result-mine { margin-top:8px; font-size:13px; text-align:center; color:#111; font-weight:700; }
 .btn { width:100%; padding:14px; border:none; border-radius:12px; font-size:16px; font-weight:700; cursor:pointer; }
 .btn-dark { background:#111; color:#fff; }
 .btn-light { background:#eee; }
@@ -111,10 +116,9 @@ label { font-size:13px; font-weight:700; display:block; margin-top:14px; }
 </div>
 
 <script>
-// ★★★ 여기는 본인 정보로 바꿔두기 ★★★
-// GitHub에서 기존 파일에 있던 값을 그대로 복사해서 여기에 넣으세요.
-var SUPABASE_URL = "https://hjpqipzjvnkocpecgvbc.supabase.co";
-var SUPABASE_ANON_KEY = "sb_publishable_Gtal65jwuCXkLzgTwrBmEA_ztStKl7b";
+// ★★★ 여기 2개만 Supabase에서 복사해서 채우기 ★★★
+var SUPABASE_URL = "여기에_본인_PROJECT_URL";
+var SUPABASE_ANON_KEY = "여기에_본인_PUBLISHABLE_KEY";
 var ADMIN_EMAIL = "yongj5490@gmail.com";
 
 var supabaseClient = null;
@@ -138,7 +142,6 @@ function showScreen(loggedIn, email) {
   }
 }
 
-// ★ 핵심 1: 로그인 확인 후, 이메일을 먼저 저장하고 loadPosts 부르기
 async function checkLogin() {
   if (!supabaseClient) { showScreen(false, ""); return; }
   try {
@@ -172,7 +175,6 @@ async function logout() {
   location.reload();
 }
 
-// ★ 핵심 2: 투표 기록을 DB에서 먼저 확인 (localStorage는 백업용)
 async function loadPosts() {
   if (!supabaseClient) return;
   var pRes = await supabaseClient.from('posts').select('*').order('created_at', { ascending:false });
@@ -184,13 +186,11 @@ async function loadPosts() {
 }
 
 function getMyVote(postId) {
-  // 1순위: DB에서 같은 이메일로 찾은 투표
   for (var i=0; i<allVotes.length; i++) {
     if (allVotes[i].post_id === postId && allVotes[i].voter_email === currentUserEmail) {
       return allVotes[i].choice;
     }
   }
-  // 2순위: 옛날에 localStorage에 저장된 것만 백업으로 보여주기
   var local = localStorage.getItem('voted_' + postId);
   if (local) return local;
   return null;
@@ -208,13 +208,14 @@ function renderPosts() {
     var total = votes.length;
     var myVote = getMyVote(p.id);
     var buyPct = total > 0 ? Math.round(buy / total * 100) : 50;
+    var skipPct = 100 - buyPct;
     var cat = CATEGORY_LABEL[p.category] || p.category || "기타";
     var img = p.image_url ? '<img src="'+p.image_url+'">' : '';
     var resultHtml = "";
     if (myVote) {
-      resultHtml = '<div class="gauge"><div class="gauge-buy" style="width:'+buyPct+'%"></div><div class="gauge-skip" style="flex:1"></div></div><div class="result">사! '+buy+'표 ('+buyPct+'%) · 참아! '+skip+'표 · 총 '+total+'표 · 당신은 ['+(myVote==='buy'?'사!':'참아!')+']에 투표했어요</div>';
+      resultHtml = '<div class="result"><div class="gauge"><div class="gauge-buy" style="width:'+buyPct+'%"></div><div class="gauge-skip" style="flex:1"></div></div><div class="result-big"><div class="result-box"><b>사! '+buyPct+'%</b><span>'+buy+'표</span></div><div class="result-box"><b>참아! '+skipPct+'%</b><span>'+skip+'표</span></div></div><div class="result-mine">총 '+total+'표 · 당신은 ['+(myVote==='buy'?'사!':'참아!')+']에 투표했어요</div></div>';
     } else {
-      resultHtml = '<div class="result">투표하면 결과가 보여요 · 현재 ??? · 총 '+total+'표</div>';
+      resultHtml = '<div class="result"><div class="gauge"><div class="gauge-buy" style="width:50%"></div><div class="gauge-skip" style="flex:1"></div></div><div class="result-mine">투표하면 결과가 보여요 · 현재 ??? · 총 '+total+'표</div></div>';
     }
     var adminBtn = "";
     if (currentUserEmail === ADMIN_EMAIL) {
@@ -245,15 +246,12 @@ async function updateMyRight() {
   document.getElementById('myRight').textContent = "내 투표 " + myVotes + "개 · 내 글 " + myPosts + "개 · 쓸 수 있는 글 " + allowed + "개 (첫 글 무료, 투표 3개 = 글 1개)";
 }
 
-// ★ 핵심 3: 투표할 때도 DB에서 같은 이메일로 먼저 확인
 async function vote(postId, choice) {
   if (!currentUserEmail) { alert("먼저 로그인해 주세요."); return; }
-  // DB에서 중복 확인 - 사파리/크롬/인스타 어디서든 같은 이메일이면 걸러짐
   var check = await supabaseClient.from('votes').select('*').eq('post_id', postId).eq('voter_email', currentUserEmail).maybeSingle();
   if (check.data) { alert("이미 이 글에 투표했어요!"); await loadPosts(); return; }
   var res = await supabaseClient.from('votes').insert([{ post_id: postId, voter_email: currentUserEmail, choice: choice }]);
   if (res.error) { alert("투표에 실패했어요. 다시 눌러보세요."); return; }
-  // 백업용으로만 localStorage에도 저장
   localStorage.setItem('voted_' + postId, choice);
   await loadPosts();
 }
@@ -272,15 +270,12 @@ async function submitPost() {
   var fileInput = document.getElementById('f_photo');
   if (!name || !price || !want || !hesitate) { alert("필수 항목을 다 채워주세요."); return; }
   if (!fileInput.files || !fileInput.files[0]) { alert("사진을 올려주세요."); return; }
-
-  // 글쓰기 권리 확인: 첫 글 무료, 그 다음 투표 3개 = 1개
   var myVotesRes = await supabaseClient.from('votes').select('id').eq('voter_email', currentUserEmail);
   var myPostsRes = await supabaseClient.from('posts').select('id').eq('author_email', currentUserEmail);
   var myVotes = myVotesRes.data ? myVotesRes.data.length : 0;
   var myPosts = myPostsRes.data ? myPostsRes.data.length : 0;
   var allowed = 1 + Math.floor(myVotes / 3);
   if (myPosts >= allowed) { alert("글쓰기 권리가 부족해요. 투표 " + (3 - (myVotes % 3)) + "개 더 하면 글을 쓸 수 있어요! (현재 투표 " + myVotes + "개)"); return; }
-
   var file = fileInput.files[0];
   var reader = new FileReader();
   reader.onload = async function(e) {
