@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Chamgi Club ver2.1.3 - votes voter_email 수정 -->
+<!-- Chamgi Club ver2.1.3 - 노트형 레이아웃 + 투표바 규칙 -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -35,8 +35,13 @@ header p{font-size:12.5px;color:var(--muted);margin-top:3px}
 .catBtn{flex-shrink:0;border:1px solid #ddd;background:#fff;border-radius:999px;padding:8px 12px;font-size:13px;cursor:pointer;white-space:nowrap}
 .catBtn.active{background:#111;color:#fff;border-color:#111}
 .feed{margin-top:10px}
-.post{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px;margin-bottom:8px;display:flex;gap:10px;position:relative}
+.post{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:8px;position:relative}
+.postTopRow{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:10px}
+.postMain{display:flex;gap:10px;align-items:flex-start}
+.postMain .postInfo{flex:1;min-width:0}
 .post img.photo{width:96px;height:96px;object-fit:cover;border-radius:10px;flex-shrink:0;background:#e9e9e9}
+.postInfo h3{font-size:16px;line-height:1.35;margin:2px 0 4px;word-break:keep-all}
+.postInfo .price{font-size:15px;font-weight:800}
 @media(max-width:480px){.post img.photo{width:80px;height:80px}}
 .postBody{flex:1;min-width:0}
 .postTop{display:flex;justify-content:space-between;align-items:flex-start;gap:6px}
@@ -44,10 +49,10 @@ header p{font-size:12.5px;color:var(--muted);margin-top:3px}
 .delBtn{font-size:11px;color:#b06a63;background:none;border:none;cursor:pointer;white-space:nowrap;padding:2px}
 .post h3{font-size:15px;line-height:1.35;margin:6px 0 2px;word-break:keep-all}
 .price{font-size:15px;font-weight:800}
-.reason{margin-top:6px;padding:8px;border-radius:10px;font-size:12.5px;line-height:1.5;word-break:keep-all;white-space:pre-wrap}
+.reason{margin-top:8px;padding:10px 14px;border-radius:999px;font-size:13px;line-height:1.5;word-break:keep-all;white-space:pre-wrap}
 .reason.want{background:#e8f8ee;border:1px solid #c2e9d0}
 .reason.hes{background:#fff;border:1px solid #e8e8e8}
-.reason.plan{background:#eef2ff;border:1px solid #c8d2ff}
+.reason.plan{background:transparent;border:none;border-radius:0;padding:4px 4px;font-size:12.5px;color:#333}
 .voteArea{margin-top:8px}
 .voteBtns{display:flex;gap:8px}
 .voteBtns button{flex:1;height:36px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;color:#fff;pointer-events:auto;touch-action:manipulation}
@@ -102,7 +107,7 @@ header p{font-size:12.5px;color:var(--muted);margin-top:3px}
 <div class="debugBox" id="debugBox"></div>
 <div class="catBar" id="catBar"></div>
 <div class="feed" id="feed"><div class="empty">글을 불러오는 중이에요...</div></div>
-<div class="version">ver2.1.3 · votes voter_email 수정 · https://chamgi-club.vercel.app</div>
+<div class="version">ver2.1.3 · 노트형 레이아웃 · 투표바 규칙 · https://chamgi-club.vercel.app</div>
 </div>
 
 <button class="fab" onclick="onFab()">✏️</button>
@@ -110,13 +115,13 @@ header p{font-size:12.5px;color:var(--muted);margin-top:3px}
 <div class="modalBg" id="loginModal"><div class="modal"><h2>🔒 구글 로그인 이후 사용할 수 있어요</h2><p>투표와 글쓰기는 로그인 후 이용할 수 있어요.</p><button class="btnBlack" style="width:100%;padding:13px;margin-top:16px" onclick="loginGoogle()">G Google로 계속하기</button><button class="btnWhite" style="width:100%;padding:12px;margin-top:8px" onclick="closeModal('loginModal')">닫기</button></div></div>
 
 <div class="modalBg" id="writeModal"><div class="modal">
-<h2>✏️ 글 쓰기</h2><p>상품명·가격·이유·안사면 계획·사진은 필수예요.</p>
+<h2>✏️ 글 쓰기</h2><p>상품명·가격·이유·사진은 필수예요. 안사면은 선택이에요.</p>
 <div class="field"><label>상품명 *</label><input id="fName" placeholder="예) 무선 이어폰"></div>
 <div class="field"><label>가격 * (원, 숫자만)</label><input id="fPrice" inputmode="numeric" placeholder="예) 129000"></div>
 <div class="field"><label>카테고리 *</label><select id="fCat"><option value="의류">👕 의류</option><option value="잡화">👜 잡화</option><option value="뷰티">💄 뷰티</option><option value="전자기기">📱 전자기기</option><option value="식품 / 간식">🍿 식품 / 간식</option><option value="취미 / 문구">✏️ 취미 / 문구</option><option value="생활용품">🧺 생활용품</option><option value="기타">📦 기타</option></select></div>
-<div class="field"><label>사고싶은 이유 *</label><textarea id="fWant" placeholder="왜 사고 싶어요?"></textarea></div>
-<div class="field"><label>참는 이유 *</label><textarea id="fHes" placeholder="왜 망설여져요?"></textarea></div>
-<div class="field"><label>안사면 * (plan_if_skip)</label><textarea id="fPlan" placeholder="예) 안사면 그 돈으로 적금에 넣을게요."></textarea></div>
+<div class="field"><label>💚 사고싶은 이유 *</label><textarea id="fWant" placeholder="왜 사고 싶어요?"></textarea></div>
+<div class="field"><label>🛑 참는 이유 *</label><textarea id="fHes" placeholder="왜 망설여져요?"></textarea></div>
+<div class="field"><label>🚫 안사면</label><textarea id="fPlan" placeholder="안사면 어떻게 할 거예요? (선택)"></textarea></div>
 <div class="field"><label>📷 사진 * (파일 업로드)</label><div class="uploadBox" onclick="document.getElementById('fPhoto').click()"><img id="photoPreview"><div id="uploadHint">📷 사진을 눌러 올려주세요<br><small>JPG / PNG / HEIC</small></div><input type="file" id="fPhoto" accept="image/*" style="display:none"></div><div style="display:flex;gap:8px;margin-top:8px"><button class="btnWhite" style="flex:1" onclick="clearPhoto(event)">✖️ 사진 지우기</button><span style="flex:1;font-size:12px;color:#777;align-self:center" id="fileName"></span></div></div>
 <div class="row" style="margin-top:18px"><button class="btnWhite" onclick="closeModal('writeModal')">취소</button><button class="btnBlack" id="submitBtn" onclick="submitPost()">올리기</button></div>
 </div></div>
@@ -189,6 +194,7 @@ function renderFeed(){
   if(!list.length){ feed.innerHTML=`<div class="empty">아직 이 카테고리에 글이 없어요.<br>첫 글을 올려보세요!</div>`; return; }
   feed.innerHTML=list.map(p=>{
     const buy=p._buy||0, skip=p._skip||0, total=buy+skip;
+    // 규칙 1: %는 자연수만 - Math.round
     const buyPct=total?Math.round(buy/total*100):0; const skipPct=total?100-buyPct:0;
     const my=myVotes[p.id]; const voted=!!my;
     const isAdmin=currentUser && currentUser.email===ADMIN_EMAIL;
@@ -199,12 +205,25 @@ function renderFeed(){
     } else if(!voted){
       voteHtml=`<div class="voteArea"><div class="voteBtns"><button type="button" class="buy" onclick="doVote('${p.id}','buy')">💚 사!</button><button type="button" class="skip" onclick="doVote('${p.id}','skip')">🛑 참아!</button></div><div class="lockNote">투표하면 결과가 보여요 · 1인 1표</div></div>`;
     } else {
+      // 규칙 2: 바 안에는 이모티콘 + % + (투표수)만
       const buyLabel=`💚 ${buyPct}% (${buy})`; const skipLabel=`🛑 ${skipPct}% (${skip})`;
-      const leftLabel=buyPct<35?`사! · ${buyLabel}`:`사!`; const rightLabel=skipPct<35?`참아! · ${skipLabel}`:`참아!`;
-      const myLeft=my==='buy', myRight=my==='skip';
-      voteHtml=`<div class="voteArea"><div class="barWrap">${my?`<span class="myVoteBadge" style="${myLeft?'left:2px':'right:2px'}">✓ 내 투표</span>`:''}<div class="bar"><div class="barSeg buySeg ${myLeft?'voted':''}" style="flex-basis:${buyPct}%;opacity:${myLeft?1:0.88}"><span data-full="${buyLabel}" data-pct="${buyPct}%">${buyLabel}</span></div><div class="barSeg skipSeg ${myRight?'voted':''}" style="flex-basis:${skipPct}%;opacity:${myRight?1:0.88}"><span data-full="${skipLabel}" data-pct="${skipPct}%">${skipLabel}</span></div></div><div class="barLabels"><span>${leftLabel}</span><span>${rightLabel}</span></div><div class="barSub">투표 ${total}개 · 1인 1표</div></div></div>`;
+      // 규칙 4: 100:0이면 바 전체가 그 색
+      const is100Buy = buyPct===100, is100Skip = skipPct===100;
+      let barInner='';
+      if(is100Buy){
+        barInner=`<div class="barSeg buySeg ${my==='buy'?'voted':''}" style="flex-basis:100%"><span data-full="${buyLabel}" data-pct="${buyPct}%">${buyLabel}</span></div>`;
+      } else if(is100Skip){
+        barInner=`<div class="barSeg skipSeg ${my==='skip'?'voted':''}" style="flex-basis:100%"><span data-full="${skipLabel}" data-pct="${skipPct}%">${skipLabel}</span></div>`;
+      } else {
+        barInner=`<div class="barSeg buySeg ${my==='buy'?'voted':''}" style="flex-basis:${buyPct}%;opacity:${my==='buy'?1:0.88}"><span data-full="${buyLabel}" data-pct="${buyPct}%">${buyLabel}</span></div><div class="barSeg skipSeg ${my==='skip'?'voted':''}" style="flex-basis:${skipPct}%;opacity:${my==='skip'?1:0.88}"><span data-full="${skipLabel}" data-pct="${skipPct}%">${skipLabel}</span></div>`;
+      }
+      // 규칙 3: 바 밑에는 왼쪽 사! + 이모티콘 / 오른쪽 참아! + 이모티콘
+      // 규칙 5: 바 최하단 1인 1표 없음 - barSub 제거
+      voteHtml=`<div class="voteArea"><div class="barWrap">${my?`<span class="myVoteBadge" style="${my==='buy'?'left:2px':'right:2px'}">✓ 내 투표</span>`:''}<div class="bar">${barInner}</div><div class="barLabels"><span>사! 💚</span><span>참아! 🛑</span></div></div></div>`;
     }
-    return `<article class="post"><div style="display:flex;gap:10px;width:100%">${photo?`<img class="photo" src="${escapeHtml(photo)}" alt="" onerror="this.style.display='none'">`:`<div class="photo" style="display:flex;align-items:center;justify-content:center;font-size:28px;width:96px;height:96px;flex-shrink:0">📷</div>`}<div class="postBody"><div class="postTop"><span class="catBadge">${CAT_EMOJI[p.category]||'📦'} ${escapeHtml(p.category)}</span>${isAdmin?`<button class="delBtn" onclick="askDelete('${p.id}')">🗑️ 삭제</button>`:''}</div><h3>${escapeHtml(p.product_name||'(제목 없음)')}</h3><div class="price">${fmt(p.price)}</div><div class="reason want">💚 ${escapeHtml(p.want_reason||'(사고싶은 이유가 없어요)')}</div><div class="reason hes">🛑 ${escapeHtml(p.hesitate_reason||'(참는 이유가 없어요)')}</div><div class="reason plan">🚫 안사면: ${escapeHtml(p.plan_if_skip||'(안사면 계획이 없어요)')}</div>${voteHtml}</div></div></article>`;
+    // 규칙 6: 글박스 빈 공간 없게 - 사진/제품명 위, 이유/투표바 아래 전체 너비
+    const planText = p.plan_if_skip ? `🚫 안사면: ${escapeHtml(p.plan_if_skip)}` : `🚫 안사면: -`;
+    return `<article class="post"><div class="postTopRow"><span class="catBadge">${CAT_EMOJI[p.category]||'📦'} ${escapeHtml(p.category)}</span>${isAdmin?`<button class="delBtn" onclick="askDelete('${p.id}')">🗑️ 삭제</button>`:''}</div><div class="postMain">${photo?`<img class="photo" src="${escapeHtml(photo)}" alt="" onerror="this.style.display='none'">`:`<div style="display:flex;align-items:center;justify-content:center;font-size:28px;width:96px;height:96px;flex-shrink:0;background:#e9e9e9;border-radius:10px">📷</div>`}<div class="postInfo"><h3>${escapeHtml(p.product_name||'(제목 없음)')}</h3><div class="price">${fmt(p.price)}</div></div></div><div class="reason want">💚 ${escapeHtml(p.want_reason||'(사고싶은 이유가 없어요)')}</div><div class="reason hes">🛑 ${escapeHtml(p.hesitate_reason||'(참는 이유가 없어요)')}</div><div class="reason plan">${planText}</div>${voteHtml}</article>`;
   }).join('');
   requestAnimationFrame(()=> setTimeout(fitVoteBar, 60));
 }
@@ -289,7 +308,7 @@ async function submitPost(){
   if(!price||price<=0){ toast('가격을 숫자로 입력해 주세요.'); return; }
   if(!want){ toast('사고싶은 이유를 입력해 주세요.'); return; }
   if(!hes){ toast('참는 이유를 입력해 주세요.'); return; }
-  if(!plan){ toast('안사면 계획을 입력해 주세요.'); return; }
+  // 안사면은 선택 - 비워도 됨
   if(!selectedFile){ toast('사진을 올려주세요.'); return; }
   const btn=document.getElementById('submitBtn'); btn.disabled=true; btn.textContent='올리는 중...';
   try{
