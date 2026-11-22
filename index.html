@@ -1,25 +1,7 @@
-<html lang="ko"><head><style>
-@font-face {
-  font-family: "Optimistic";
-  font-style: normal;
-  font-weight: 400 600;
-  font-display: swap;
-  src: url("/fonts/OptimisticAI_VF_Optimized.woff2") format("woff2");
-}
-@font-face {
-  font-family: "Optimistic Mono";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("/fonts/OptimisticMono_W_TextRegular.woff2") format("woff2");
-}
-:where(html) {
-  font-family: "Optimistic", system-ui, sans-serif;
-}
-:where(code, pre, kbd, samp) {
-  font-family: "Optimistic Mono", ui-monospace, monospace;
-}
-</style>
+<!DOCTYPE html>
+<!-- Chamgi Club ver2.1.3 - votes voter_email 수정 -->
+<html lang="ko">
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>참기 클럽 - 혼자 참지 마요</title>
@@ -120,7 +102,7 @@ header p{font-size:12.5px;color:var(--muted);margin-top:3px}
 <div class="debugBox" id="debugBox"></div>
 <div class="catBar" id="catBar"></div>
 <div class="feed" id="feed"><div class="empty">글을 불러오는 중이에요...</div></div>
-<div class="version">ver2.1.2 · 오류수정 · https://chamgi-club.vercel.app</div>
+<div class="version">ver2.1.3 · votes voter_email 수정 · https://chamgi-club.vercel.app</div>
 </div>
 
 <button class="fab" onclick="onFab()">✏️</button>
@@ -153,7 +135,7 @@ const CATS = ["전체","의류","잡화","뷰티","전자기기","식품 / 간�
 const CAT_EMOJI = {"의류":"👕","잡화":"👜","뷰티":"💄","전자기기":"📱","식품 / 간식":"🍿","취미 / 문구":"✏️","생활용품":"🧺","기타":"📦"};
 
 function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; setTimeout(()=>t.style.display='none',3000); }
-function showDebug(msg){ const b=document.getElementById('debugBox'); b.style.display='block'; b.textContent = "🔧 디버그 (이 박스는 오류가 있을 때만 떠요):\n" + msg; }
+function showDebug(msg){ const b=document.getElementById('debugBox'); b.style.display='block'; b.textContent = "🔧 디버그:\n" + msg; }
 function openLogin(){ document.getElementById('loginModal').classList.add('open'); }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 async function loginGoogle(){ const {error}=await supabaseClient.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin+window.location.pathname}}); if(error) toast('로그인 실패: '+error.message); }
@@ -163,7 +145,6 @@ function renderCats(){ const bar=document.getElementById('catBar'); bar.innerHTM
 function setCat(c){ activeCat=c; renderCats(); renderFeed(); }
 function fmt(n){ const v=Number(n); return (isNaN(v)?0:v).toLocaleString('ko-KR')+'원'; }
 function escapeHtml(s){ return String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-// 어떤 컬럼명이든 첫 번째로 있는 값 가져오기
 function pick(obj, keys){ for(const k of keys){ if(obj && obj[k]!==undefined && obj[k]!==null && obj[k]!=='') return obj[k]; } return ''; }
 function normPost(p){
   return {
@@ -171,19 +152,18 @@ function normPost(p){
     product_name: pick(p, ['product_name','title','name','product','item_name']),
     price: pick(p, ['price','cost','amount']),
     category: pick(p, ['category','cat','type']) || '기타',
-    // 핵심 수정: want/hesitate 어떤 컬럼명이든 다 읽음
-    want_reason: pick(p, ['want_reason','want','reason_want','buy_reason','wantReason','reason_buy','why_buy','want_text']),
-    hesitate_reason: pick(p, ['hesitate_reason','hesitate','reason_hesitate','skip_reason','hesitateReason','reason_skip','why_hesitate','hesitate_text','hold_reason']),
-    plan_if_skip: pick(p, ['plan_if_skip','plan','if_skip','planIfSkip','ifSkip','plan_if_hold','if_hold']),
+    want_reason: pick(p, ['reason_want','want_reason','want','reason_buy','buy_reason']),
+    hesitate_reason: pick(p, ['reason_hesitate','hesitate_reason','hesitate','reason_skip','skip_reason']),
+    plan_if_skip: pick(p, ['plan_if_skip','plan','if_skip','planIfSkip']),
     image_url: pick(p, ['image_url','photo_url','image','photo','img_url','picture']),
     raw: p
   };
 }
 function normChoice(v){
-  let c = pick(v, ['choice','vote','type','value','vote_type','result','selection']);
+  let c = pick(v, ['choice','vote','type','value','vote_type']);
   if(c===true || c==='true' || c==='buy' || c==='yes' || c==='Y' || c===1 || c==='1') return 'buy';
   if(c===false || c==='false' || c==='skip' || c==='no' || c==='N' || c===0 || c==='0') return 'skip';
-  if(typeof c==='string'){ const s=c.toLowerCase(); if(s.includes('buy')||s.includes('사')) return 'buy'; if(s.includes('skip')||s.includes('참')||s.includes('hold')) return 'skip'; }
+  if(typeof c==='string'){ const s=c.toLowerCase(); if(s.includes('buy')||s.includes('사')) return 'buy'; if(s.includes('skip')||s.includes('참')) return 'skip'; }
   return c || 'buy';
 }
 function fitVoteBar(){
@@ -224,47 +204,31 @@ function renderFeed(){
       const myLeft=my==='buy', myRight=my==='skip';
       voteHtml=`<div class="voteArea"><div class="barWrap">${my?`<span class="myVoteBadge" style="${myLeft?'left:2px':'right:2px'}">✓ 내 투표</span>`:''}<div class="bar"><div class="barSeg buySeg ${myLeft?'voted':''}" style="flex-basis:${buyPct}%;opacity:${myLeft?1:0.88}"><span data-full="${buyLabel}" data-pct="${buyPct}%">${buyLabel}</span></div><div class="barSeg skipSeg ${myRight?'voted':''}" style="flex-basis:${skipPct}%;opacity:${myRight?1:0.88}"><span data-full="${skipLabel}" data-pct="${skipPct}%">${skipLabel}</span></div></div><div class="barLabels"><span>${leftLabel}</span><span>${rightLabel}</span></div><div class="barSub">투표 ${total}개 · 1인 1표</div></div></div>`;
     }
-    return `<article class="post"><div style="display:flex;gap:10px;width:100%">${photo?`<img class="photo" src="${escapeHtml(photo)}" alt="" onerror="this.style.display='none'">`:`<div class="photo" style="display:flex;align-items:center;justify-content:center;font-size:28px;width:96px;height:96px;flex-shrink:0">📷</div>`}<div class="postBody"><div class="postTop"><span class="catBadge">${CAT_EMOJI[p.category]||'📦'} ${escapeHtml(p.category)}</span>${isAdmin?`<button class="delBtn" onclick="askDelete('${p.id}')">🗑️ 삭제</button>`:''}</div><h3>${escapeHtml(p.product_name||'(제목 없음)')}</h3><div class="price">${fmt(p.price)}</div><div class="reason want">💚 ${escapeHtml(p.want_reason||'(사고싶은 이유가 없어요 - 예전 글은 Supabase에서 want_reason 컬럼을 확인해 주세요)')}</div><div class="reason hes">🛑 ${escapeHtml(p.hesitate_reason||'(참는 이유가 없어요)')}</div><div class="reason plan">🚫 안사면: ${escapeHtml(p.plan_if_skip||'(안사면 계획이 없어요)')}</div>${voteHtml}</div></div></article>`;
+    return `<article class="post"><div style="display:flex;gap:10px;width:100%">${photo?`<img class="photo" src="${escapeHtml(photo)}" alt="" onerror="this.style.display='none'">`:`<div class="photo" style="display:flex;align-items:center;justify-content:center;font-size:28px;width:96px;height:96px;flex-shrink:0">📷</div>`}<div class="postBody"><div class="postTop"><span class="catBadge">${CAT_EMOJI[p.category]||'📦'} ${escapeHtml(p.category)}</span>${isAdmin?`<button class="delBtn" onclick="askDelete('${p.id}')">🗑️ 삭제</button>`:''}</div><h3>${escapeHtml(p.product_name||'(제목 없음)')}</h3><div class="price">${fmt(p.price)}</div><div class="reason want">💚 ${escapeHtml(p.want_reason||'(사고싶은 이유가 없어요)')}</div><div class="reason hes">🛑 ${escapeHtml(p.hesitate_reason||'(참는 이유가 없어요)')}</div><div class="reason plan">🚫 안사면: ${escapeHtml(p.plan_if_skip||'(안사면 계획이 없어요)')}</div>${voteHtml}</div></div></article>`;
   }).join('');
   requestAnimationFrame(()=> setTimeout(fitVoteBar, 60));
 }
 
 async function loadAll(){
   renderCats();
-  // posts: select(*) 로 컬럼명 오류 방지
   const { data: posts, error: postErr } = await supabaseClient.from('posts').select('*').order('created_at',{ascending:false});
-  if(postErr){ document.getElementById('feed').innerHTML=`<div class="empty">글을 불러오지 못했어요.<br>${escapeHtml(postErr.message)}<br><br>Supabase → Table Editor → posts 테이블 컬럼을 확인해 주세요.</div>`; showDebug('posts 조회 오류: '+postErr.message+'\ncode: '+postErr.code); return; }
-  const raw = posts||[];
-  if(raw.length && !window._loggedKeys){ console.log('posts sample keys:', Object.keys(raw[0])); window._loggedKeys=true; }
-  allPosts = raw.map(normPost);
-  // votes per post - post_id 컬럼이 없을 수도 있으니 전체 가져와서 필터
+  if(postErr){ document.getElementById('feed').innerHTML=`<div class="empty">글을 불러오지 못했어요.<br>${escapeHtml(postErr.message)}</div>`; showDebug('posts 조회 오류: '+postErr.message); return; }
+  allPosts = (posts||[]).map(normPost);
   for(const p of allPosts){
-    let vs=[], vErr=null;
-    const r1 = await supabaseClient.from('votes').select('*').eq('post_id', p.id);
-    if(r1.error){ // post_id 컬럼명이 다를 수 있음 - 전체 조회 후 필터
-      const rAll = await supabaseClient.from('votes').select('*');
-      vErr = rAll.error;
-      if(!vErr) vs = (rAll.data||[]).filter(v=> String(v.post_id||v.postId||v.post||'')===String(p.id));
-    } else vs = r1.data||[];
-    if(vErr){ showDebug('votes 조회 오류: '+vErr.message); vs=[]; }
-    p._buy = vs.filter(v=> normChoice(v)==='buy').length;
-    p._skip = vs.filter(v=> normChoice(v)==='skip').length;
+    const { data: vs, error: vErr } = await supabaseClient.from('votes').select('*').eq('post_id', p.id);
+    if(vErr){ showDebug('votes 조회 오류: '+vErr.message); p._buy=0; p._skip=0; continue; }
+    p._buy = (vs||[]).filter(v=> normChoice(v)==='buy').length;
+    p._skip = (vs||[]).filter(v=> normChoice(v)==='skip').length;
   }
   if(currentUser){
-    const { data: mine, error: myErr } = await supabaseClient.from('votes').select('*');
+    const { data: mine, error: myErr } = await supabaseClient.from('votes').select('*').eq('voter_email', currentUser.email);
     if(myErr){ showDebug('내 투표 조회 오류: '+myErr.message); }
     else{
-      const all = mine||[];
-      const filtered = all.filter(v=>{
-        const em = v.user_email||v.email||v.userEmail||'';
-        const uid = v.user_id||v.userId||'';
-        return em===currentUser.email || String(uid)===String(currentUser.id);
-      });
-      myVotes={}; filtered.forEach(v=>{ const pid=v.post_id||v.postId||v.post; if(pid) myVotes[pid]=normChoice(v); });
-      myVoteCount=filtered.length;
+      myVotes={}; (mine||[]).forEach(v=>{ const pid=v.post_id; if(pid) myVotes[pid]=normChoice(v); });
+      myVoteCount=(mine||[]).length;
     }
     const { data: myPosts } = await supabaseClient.from('posts').select('*');
-    if(myPosts) myPostCount=(myPosts||[]).filter(p=> String(p.user_id||p.userId||'')===String(currentUser.id) || (p.email||p.user_email||'')===currentUser.email).length;
+    if(myPosts) myPostCount=(myPosts||[]).filter(p=> String(p.user_id||'')===String(currentUser.id) || (p.email||p.user_email||'')===currentUser.email).length;
   } else { myVotes={}; myVoteCount=0; myPostCount=0; }
   renderStatus(); renderFeed();
 }
@@ -283,26 +247,16 @@ async function logout(){ await supabaseClient.auth.signOut(); location.reload();
 async function doVote(postId, choice){
   if(!currentUser){ openLogin(); return; }
   if(myVotes[postId]){ toast('이미 투표한 글이에요.'); return; }
-  // 투표 버튼 중복 클릭 방지용으로 일단 표시만 바꾸고, 실패하면 되돌림
   const btn = event?.target; if(btn) btn.disabled=true;
-  // 여러 컬럼 조합 시도: 가장 흔한 것부터
-  const tries = [
-    { post_id: postId, user_email: currentUser.email, choice },
-    { post_id: postId, email: currentUser.email, choice },
-    { post_id: postId, user_id: currentUser.id, choice },
-    { post_id: postId, user_email: currentUser.email, vote: choice },
-  ];
-  let lastErr=null;
-  for(const payload of tries){
-    const { error } = await supabaseClient.from('votes').insert(payload);
-    if(!error){ lastErr=null; break; }
-    // 중복 투표( unique )면 이미 투표한 것으로 처리
-    if(String(error.message).includes('duplicate') || error.code==='23505'){ lastErr=null; toast('이미 투표한 글이에요.'); await loadAll(); return; }
-    // 컬럼 없음 오류면 다음 조합 시도, 아니면 바로 중단하고 에러 표시
-    if(error.code==='42703' || String(error.message).includes('column')){ lastErr=error; continue; }
-    lastErr=error; break;
+  // votes 테이블 정확한 컬럼: post_id / voter_email / choice 만 사용. user_id 절대 넣지 않음 (FK 오류 원인)
+  const { error } = await supabaseClient.from('votes').insert({ post_id: postId, voter_email: currentUser.email, choice });
+  if(btn) btn.disabled=false;
+  if(error){
+    if(error.code==='23505' || String(error.message).includes('duplicate')){ toast('이미 투표한 글이에요.'); await loadAll(); return; }
+    showDebug('투표 저장 오류: '+error.message+'\ncode: '+error.code+'\n→ votes 테이블은 post_id / voter_email / choice 3개만 써요.');
+    toast('투표 저장 실패: '+error.message);
+    return;
   }
-  if(lastErr){ showDebug('투표 저장 오류: '+lastErr.message+'\nSupabase → votes 테이블 컬럼이 post_id / user_email / choice 인지 확인해 주세요.'); toast('투표 저장 실패: '+lastErr.message); if(btn) btn.disabled=false; return; }
   myVotes[postId]=choice; myVoteCount++;
   toast(choice==='buy'?'💚 사! 에 투표했어요.':'🛑 참아! 에 투표했어요.');
   await loadAll();
@@ -345,12 +299,11 @@ async function submitPost(){
     if(upErr) throw new Error('사진 업로드 실패: '+upErr.message+' (photos 버킷이 Public인지 확인)');
     const { data: pub } = supabaseClient.storage.from('photos').getPublicUrl(path);
     const imageUrl=pub.publicUrl;
-    // 글 저장: 여러 컬럼 조합 시도 (기존 테이블에 맞게)
     const base = { product_name:name, price, category:cat, image_url:imageUrl, user_id:currentUser.id, email:currentUser.email, plan_if_skip:plan };
     const variants = [
+      { ...base, reason_want:want, reason_hesitate:hes },
       { ...base, want_reason:want, hesitate_reason:hes },
       { ...base, want:want, hesitate:hes },
-      { ...base, reason_want:want, reason_hesitate:hes },
     ];
     let saved=false, lastErr=null;
     for(const payload of variants){
@@ -369,6 +322,5 @@ async function submitPost(){
 supabaseClient.auth.onAuthStateChange((_e, session)=>{ currentUser=session?.user||null; loadAll(); });
 (async()=>{ const {data}=await supabaseClient.auth.getSession(); currentUser=data?.session?.user||null; await loadAll(); })();
 </script>
-<script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}function isInlineMediaSlotElement(node){return !!(node&&node.getAttribute&&node.getAttribute("data-clippy-inline-media-slot")!==null)}function findInlineMediaSlot(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(isInlineMediaSlotElement(node))return node}return null}function readInlineMediaUrl(node){if(!node)return null;return node.getAttribute&&((node.getAttribute("data-clippy-inline-media-url")||node.getAttribute("data-url")||node.getAttribute("data_url")))||node.href||null}function stripHash(url){return String(url).replace(/#.*$/,"")}function urlsMatch(a,b){if(!a||!b)return false;try{return stripHash(new URL(a,loc).href)===stripHash(new URL(b,loc).href)}catch(_){return stripHash(a)===stripHash(b)}}function isFirstPartyReelUrl(value){try{var url=new URL(value,loc);if(url.protocol!=="https:")return false;var host=url.hostname.toLowerCase();var supported=host==="instagram.com"||host.endsWith(".instagram.com")||host==="facebook.com"||host.endsWith(".facebook.com");return supported&&/\/reels?\//i.test(url.pathname)}catch(_){return false}}function isInlineMediaUrlClick(node,href){var slot=findInlineMediaSlot(node);if(!slot)return false;var slotUrl=readInlineMediaUrl(slot);if(slotUrl)return urlsMatch(href,slotUrl);return isFirstPartyReelUrl(href)}function findDataHref(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(node.getAttribute){var href=node.getAttribute("data-href")||node.getAttribute("data-url");if(href)return{href:href,node:node}}}return null}var nativeOpen=window.open;window.open=function(url){if(parent!==window&&typeof url==="string"&&/^https?:\/\//.test(url)){parent.postMessage({type:"ecto:usercontent-link-click",href:url},"*");return null}return nativeOpen?nativeOpen.apply(window,arguments):null};document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;if(parent===window)return;var a=target.closest?target.closest("a[href]"):null;if(a&&a.href&&/^https?:\/\//.test(a.href)&&a.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(a,a.href))return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*");return}var dataHref=findDataHref(target);if(dataHref&&/^https?:\/\//.test(dataHref.href)&&dataHref.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(dataHref.node,dataHref.href))return;e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:dataHref.href},"*")}},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script>
-
-</body></html>
+</body>
+</html>
