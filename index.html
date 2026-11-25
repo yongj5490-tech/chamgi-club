@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Chamgi Club ver2.1.3 - 노트형 레이아웃 + 투표바 규칙 -->
+<!-- Chamgi Club ver2.1.3 - 노트형 레이아웃 + 투표바 규칙 + email 수정 -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -194,7 +194,6 @@ function renderFeed(){
   if(!list.length){ feed.innerHTML=`<div class="empty">아직 이 카테고리에 글이 없어요.<br>첫 글을 올려보세요!</div>`; return; }
   feed.innerHTML=list.map(p=>{
     const buy=p._buy||0, skip=p._skip||0, total=buy+skip;
-    // 규칙 1: %는 자연수만 - Math.round
     const buyPct=total?Math.round(buy/total*100):0; const skipPct=total?100-buyPct:0;
     const my=myVotes[p.id]; const voted=!!my;
     const isAdmin=currentUser && currentUser.email===ADMIN_EMAIL;
@@ -205,9 +204,7 @@ function renderFeed(){
     } else if(!voted){
       voteHtml=`<div class="voteArea"><div class="voteBtns"><button type="button" class="buy" onclick="doVote('${p.id}','buy')">💚 사!</button><button type="button" class="skip" onclick="doVote('${p.id}','skip')">🛑 참아!</button></div><div class="lockNote">투표하면 결과가 보여요 · 1인 1표</div></div>`;
     } else {
-      // 규칙 2: 바 안에는 이모티콘 + % + (투표수)만
       const buyLabel=`💚 ${buyPct}% (${buy})`; const skipLabel=`🛑 ${skipPct}% (${skip})`;
-      // 규칙 4: 100:0이면 바 전체가 그 색
       const is100Buy = buyPct===100, is100Skip = skipPct===100;
       let barInner='';
       if(is100Buy){
@@ -217,11 +214,8 @@ function renderFeed(){
       } else {
         barInner=`<div class="barSeg buySeg ${my==='buy'?'voted':''}" style="flex-basis:${buyPct}%;opacity:${my==='buy'?1:0.88}"><span data-full="${buyLabel}" data-pct="${buyPct}%">${buyLabel}</span></div><div class="barSeg skipSeg ${my==='skip'?'voted':''}" style="flex-basis:${skipPct}%;opacity:${my==='skip'?1:0.88}"><span data-full="${skipLabel}" data-pct="${skipPct}%">${skipLabel}</span></div>`;
       }
-      // 규칙 3: 바 밑에는 왼쪽 사! + 이모티콘 / 오른쪽 참아! + 이모티콘
-      // 규칙 5: 바 최하단 1인 1표 없음 - barSub 제거
       voteHtml=`<div class="voteArea"><div class="barWrap">${my?`<span class="myVoteBadge" style="${my==='buy'?'left:2px':'right:2px'}">✓ 내 투표</span>`:''}<div class="bar">${barInner}</div><div class="barLabels"><span>사! 💚</span><span>참아! 🛑</span></div></div></div>`;
     }
-    // 규칙 6: 글박스 빈 공간 없게 - 사진/제품명 위, 이유/투표바 아래 전체 너비
     const planText = p.plan_if_skip ? `🚫 안사면: ${escapeHtml(p.plan_if_skip)}` : `🚫 안사면: -`;
     return `<article class="post"><div class="postTopRow"><span class="catBadge">${CAT_EMOJI[p.category]||'📦'} ${escapeHtml(p.category)}</span>${isAdmin?`<button class="delBtn" onclick="askDelete('${p.id}')">🗑️ 삭제</button>`:''}</div><div class="postMain">${photo?`<img class="photo" src="${escapeHtml(photo)}" alt="" onerror="this.style.display='none'">`:`<div style="display:flex;align-items:center;justify-content:center;font-size:28px;width:96px;height:96px;flex-shrink:0;background:#e9e9e9;border-radius:10px">📷</div>`}<div class="postInfo"><h3>${escapeHtml(p.product_name||'(제목 없음)')}</h3><div class="price">${fmt(p.price)}</div></div></div><div class="reason want">💚 ${escapeHtml(p.want_reason||'(사고싶은 이유가 없어요)')}</div><div class="reason hes">🛑 ${escapeHtml(p.hesitate_reason||'(참는 이유가 없어요)')}</div><div class="reason plan">${planText}</div>${voteHtml}</article>`;
   }).join('');
@@ -267,7 +261,6 @@ async function doVote(postId, choice){
   if(!currentUser){ openLogin(); return; }
   if(myVotes[postId]){ toast('이미 투표한 글이에요.'); return; }
   const btn = event?.target; if(btn) btn.disabled=true;
-  // votes 테이블 정확한 컬럼: post_id / voter_email / choice 만 사용. user_id 절대 넣지 않음 (FK 오류 원인)
   const { error } = await supabaseClient.from('votes').insert({ post_id: postId, voter_email: currentUser.email, choice });
   if(btn) btn.disabled=false;
   if(error){
@@ -308,7 +301,6 @@ async function submitPost(){
   if(!price||price<=0){ toast('가격을 숫자로 입력해 주세요.'); return; }
   if(!want){ toast('사고싶은 이유를 입력해 주세요.'); return; }
   if(!hes){ toast('참는 이유를 입력해 주세요.'); return; }
-  // 안사면은 선택 - 비워도 됨
   if(!selectedFile){ toast('사진을 올려주세요.'); return; }
   const btn=document.getElementById('submitBtn'); btn.disabled=true; btn.textContent='올리는 중...';
   try{
@@ -318,7 +310,7 @@ async function submitPost(){
     if(upErr) throw new Error('사진 업로드 실패: '+upErr.message+' (photos 버킷이 Public인지 확인)');
     const { data: pub } = supabaseClient.storage.from('photos').getPublicUrl(path);
     const imageUrl=pub.publicUrl;
-    const base = { product_name:name, price, category:cat, image_url:imageUrl, user_id:currentUser.id, email:currentUser.email, plan_if_skip:plan };
+    const base = { product_name:name, price, category:cat, image_url:imageUrl, user_id:currentUser.id, plan_if_skip:plan };
     const variants = [
       { ...base, reason_want:want, reason_hesitate:hes },
       { ...base, want_reason:want, hesitate_reason:hes },
